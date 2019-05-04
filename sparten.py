@@ -21,7 +21,7 @@ def prod(iterable):
     value : The product of the values.
     
     """
-    return reduce(mul, iterable)
+    return reduce(mul, iterable, 1)
 
 def new_tup(n, plist):
     """
@@ -98,6 +98,15 @@ class tensor(dict):
             return temp
         else:
             raise ValueError("Don't know how to multiply by that.")
+
+    def norm(self):
+        """
+        Computes the norm of the tensor ASSUMING IT IS REAL!!!
+        """
+        want = 0.0
+        for v in self.values():
+            want += v**2
+        return np.sqrt(want)
 
     def reshape(self, size_tuple):
         """
