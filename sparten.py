@@ -28,7 +28,15 @@ def new_tup(n, plist):
     I only vaguely remember what I was thinking when I made this.
     The idea is to convert every nonzero tensor index to a number
     from the typical polynomial convention, and then reinvert from
-    polynomial number to the new index shape.
+    polynomial number to the new index shape.  That is, for a tensor
+    of shape (N1, N2, N3) we reshape to (N1*N2*N3,) with:
+
+    (N1, N2, N3) --> N2*N3*i + N3*j + k
+
+    If (M1, M2) is a new shape such that M1*M2 == N1*N2*N3 then invert
+    
+    N2*N3*i + N3*j + k --> M2*i + j --> (M1, M2).
+
     
     Parameters
     ----------
