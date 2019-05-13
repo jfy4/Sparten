@@ -56,6 +56,18 @@ def new_tup(n, plist):
         ijk.append(a)
     return tuple(ijk)
 
+
+def list_prod(list1, list2):
+    a = len(list1)
+    assert a == len(list2)
+    want = [0]*a
+    for i in range(a):
+        want[i] = list1[i]*list2[i]
+    return want
+
+
+
+
 class tensor(dict):
     """
     A sparse tensor class build on the back of python dictionary.
@@ -116,6 +128,9 @@ class tensor(dict):
             want += v**2
         return np.sqrt(want)
 
+
+
+
     def reshape(self, size_tuple):
         """
         Reshapes the sparse tensor into another tensor
@@ -139,7 +154,8 @@ class tensor(dict):
         ps = [prod(ps[i+1:]) for i in range(len(ps)-1)] + [1]
         temp = tensor()
         for k, v in self.items():
-            val = int(np.rint(sum(np.asarray(k)*np.asarray(ts))))
+#             val = int(np.rint(sum(np.asarray(k)*np.asarray(ts))))
+            val = int(sum(list_prod(k, ts)))
             temp.update({new_tup(val, ps):v})
         temp.shape = size_tuple
         return temp
