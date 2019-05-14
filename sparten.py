@@ -35,7 +35,7 @@ def new_tup(n, plist):
 
     If (M1, M2) is a new shape such that M1*M2 == N1*N2*N3 then invert
     
-    N2*N3*i + N3*j + k --> M2*i + j --> (M1, M2).
+    N2*N3*i + N3*j + k == M2*i + j --> (M1, M2).
 
     
     Parameters
@@ -64,7 +64,6 @@ def list_prod(list1, list2):
     for i in range(a):
         want[i] = list1[i]*list2[i]
     return want
-
 
 
 
@@ -240,6 +239,7 @@ class tensor(dict):
         right = ts2[len(ax2):]
         final = tuple(list(left) + list(right))
         assert (len(ax2) == (len(ts1)-len(idx1)))
+        print len(tleft), len(tright)
         tleft = tleft.reshape((prod(ts1[:len(idx1)]), prod(ts1[len(idx1):])))
         tright = tright.reshape((prod(ts2[:len(ax2)]), prod(ts2[len(ax2):])))
 
@@ -253,6 +253,7 @@ class tensor(dict):
         tleft = tleft.dot(tright)
         del tright
         tleft = tleft.todok(copy=False)
+        print len(tleft)
         tleft = tensor(tleft).reshape(final)
         return tleft
     

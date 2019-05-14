@@ -31,6 +31,7 @@ def getU2d(tensor, nums, compute_sparse=False, return_sparse=True):
     bot = tensor.dot(tensor, ([1,3], [1,3]))
     Q = top.dot(bot, ([1,3], [1,3]))
     qs = Q.shape
+    print len(Q)
     Q = (Q.transpose((0,2,1,3))).reshape((ts[0]*ts[0], ts[0]*ts[0]))
     Q = Q.to_csr()
     if (compute_sparse == True):
@@ -49,6 +50,7 @@ def update2d(tensor, umat):
 #     ts = tensor.shape
     us = umat.shape
     us = (int(np.sqrt(us[0])), int(np.sqrt(us[0])), us[1])
+    print len(umat)
     bot = tensor.dot(umat.reshape(us), ([0], [1]))
     top = tensor.dot(umat.reshape(us), ([1], [0]))
     want = bot.dot(top, ([3,1,0], [0,2,3]))
