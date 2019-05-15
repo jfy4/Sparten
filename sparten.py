@@ -67,7 +67,7 @@ def list_prod(list1, list2):
 
 
 
-class tensor(dict):
+class tensor:
     """
     A sparse tensor class build on the back of python dictionary.
     The idea is to simply store the nonzero elements as key, value
@@ -85,24 +85,33 @@ class tensor(dict):
         tol   : The tolerance below which values are ignored
                 and set to zero when creating the tensor.
         """
-        if (type(array) == np.ndarray):            
-            for x in np.argwhere(array):
-                if (abs(array[tuple(x)]) > tol):
-                    self.update({tuple(x):array[tuple(x)]})
+        if (type(array) == np.ndarray):
+            truth = np.abs(array) > tol
+            self.idx = np.argwhere(truth)
+            self.vals = array[truth]
             self.shape = array.shape
-        elif (type(array) == sps.dok.dok_matrix):
-            for k, v in array.items():
-                if (abs(v) > tol):
-                    self.update({k:v})
-            self.shape = array.shape
-        elif (type(array) == sps.csr.csr_matrix):
-            temp = array.todok()
-            for k, v in temp.items():
-                if (abs(v) > tol):
-                    self.update({k:v})
-            self.shape = array.shape
+        elif (type(array) == tuple):
+            self.idx = array[0]
+            self.vals = array[1].copy()
+            self.shape = array[2]
+#             for x in np.argwhere(array):
+#                 if (abs(array[tuple(x)]) > tol):
+#                     self.update({tuple(x):array[tuple(x)]})
+#         elif (type(array) == sps.dok.dok_matrix):
+#             for k, v in array.items():
+#                 if (abs(v) > tol):
+#                     self.update({k:v})
+#             self.shape = array.shape
+#         elif (type(array) == sps.csr.csr_matrix):
+#             temp = array.todok()
+#             for k, v in temp.items():
+#                 if (abs(v) > tol):
+#                     self.update({k:v})
+#             self.shape = array.shape
         elif (array == None):
-            self.shape = ()
+            self.shape = tuple()
+            self.idx = np.array()
+            self.vals = np.array()
         else:
             raise TypeError("Array from which to build sparse tensor not valid.")
 
@@ -111,10 +120,7 @@ class tensor(dict):
         Multiplication.  Right now only for scalars.
         """
         if isinstance(other, (int, long, float, complex)):
-            temp = copy.copy(self)
-            for k, v in self.items():
-                temp[k] = other * v
-            return temp
+            return tensor((self.idx, self.vals*other, self.shape))
         else:
             raise ValueError("Don't know how to multiply by that.")
 
@@ -122,11 +128,7 @@ class tensor(dict):
         """
         Computes the norm of the tensor ASSUMING IT IS REAL!!!
         """
-        want = 0.0
-        for v in self.values():
-            want += v**2
-        return np.sqrt(want)
-
+        return np.linalg.norm(self.vals)
 
 
 
@@ -149,15 +151,15 @@ class tensor(dict):
         
         ts = self.shape
         ps = size_tuple
-        ts = [prod(ts[::-1][:len(ts)-i]) for i in range(1,len(ts))] + [1]
-        ps = [prod(ps[i+1:]) for i in range(len(ps)-1)] + [1]
-        temp = tensor()
-        for k, v in self.items():
-#             val = int(np.rint(sum(np.asarray(k)*np.asarray(ts))))
-            val = int(sum(list_prod(k, ts)))
-            temp.update({new_tup(val, ps):v})
-        temp.shape = size_tuple
-        return temp
+        ts = np.array([prod(ts[i+1:]) for i in range(len(ts)-1)] + [1])
+        ps = np.array([prod(ps[i+1:]) for i in range(len(ps)-1)] + [1])
+        flat_vals = np.sum(ts*self.idx, axis=1)
+        new_idx = np.zeros((len(self.vals), len(size_tuple)))
+        rem = np.zeros(len(self.vals))
+        np.divmod(flat_vals, ps[0], out=(new_idx[:,0], rem))
+        for i in range(1, len(size_tuple)):
+            np.divmod(rem, ps[i], out=(new_idx[:, i], rem))
+        return tensor((new_idx.astype(int), self.vals, size_tuple))
                    
         
     def transpose(self, new_order):
@@ -176,19 +178,11 @@ class tensor(dict):
                     
         """
         assert len(new_order) == len(self.shape)
+
+        idx = np.argsort(new_order)
+        new_shape = tuple([self.shape[i] for i in idx])
+        return tensor((self.idx[:, idx], self.vals, new_shape))
         
-#         temp = copy.copy(self)
-        temp = tensor()
-        for k, v in self.items():
-#             print k, v
-#             del temp[k]
-            new_tuple = tuple([k[new_order[a]] for a in range(len(new_order))])
-            temp.update({new_tuple:v})
-        ts = self.shape
-        ts_new = tuple([ts[new_order[a]] for a in range(len(new_order))])
-        temp.shape = ts_new
-            
-        return temp
     
     def dot(self, tensor2, contracted_indices):
         """
@@ -239,23 +233,21 @@ class tensor(dict):
         right = ts2[len(ax2):]
         final = tuple(list(left) + list(right))
         assert (len(ax2) == (len(ts1)-len(idx1)))
-        print len(tleft), len(tright)
         tleft = tleft.reshape((prod(ts1[:len(idx1)]), prod(ts1[len(idx1):])))
         tright = tright.reshape((prod(ts2[:len(ax2)]), prod(ts2[len(ax2):])))
-
         # make sparse matricies in CSR format
-        tlidx = np.asarray(tleft.keys())
-        tleft = sps.csr_matrix((tleft.values(), (tlidx[:,0], tlidx[:,1])), shape=tleft.shape)
-        tridx = np.asarray(tright.keys())
-        tright = sps.csr_matrix((tright.values(), (tridx[:,0], tridx[:,1])), shape=tright.shape)
+        tlidx = tleft.idx
+        tleft = sps.csr_matrix((tleft.vals, (tlidx[:,0], tlidx[:,1])), shape=tleft.shape)
+        tridx = tright.idx
+        tright = sps.csr_matrix((tright.vals, (tridx[:,0], tridx[:,1])), shape=tright.shape)
 
         # dot and reshape into final tensor
         tleft = tleft.dot(tright)
         del tright
         tleft = tleft.todok(copy=False)
-        print len(tleft)
-        tleft = tensor(tleft).reshape(final)
-        return tleft
+        new_idx = np.array(tleft.keys())
+        new_vals = np.array(tleft.values())
+        return tensor((new_idx, new_vals, tleft.shape)).reshape(final)
     
     def to_csr(self,):
         """
@@ -266,8 +258,8 @@ class tensor(dict):
         new_matrix : A copy of the matrix in csr format.
         """
         assert (len(self.shape) == 2)
-        tidx = np.array(self.keys())
-        return sps.csr_matrix((self.values(), (tidx[:,0], tidx[:,1])), shape=self.shape)
+        tidx = self.idx
+        return sps.csr_matrix((self.vals, (tidx[:,0], tidx[:,1])), shape=self.shape)
         
     
         
