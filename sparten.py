@@ -23,47 +23,47 @@ def prod(iterable):
     """
     return reduce(mul, iterable, 1)
 
-def new_tup(n, plist):
-    """
-    I only vaguely remember what I was thinking when I made this.
-    The idea is to convert every nonzero tensor index to a number
-    from the typical polynomial convention, and then reinvert from
-    polynomial number to the new index shape.  That is, for a tensor
-    of shape (N1, N2, N3) we reshape to (N1*N2*N3,) with:
+# def new_tup(n, plist):
+#     """
+#     I only vaguely remember what I was thinking when I made this.
+#     The idea is to convert every nonzero tensor index to a number
+#     from the typical polynomial convention, and then reinvert from
+#     polynomial number to the new index shape.  That is, for a tensor
+#     of shape (N1, N2, N3) we reshape to (N1*N2*N3,) with:
 
-    (N1, N2, N3) --> N2*N3*i + N3*j + k
+#     (N1, N2, N3) --> N2*N3*i + N3*j + k
 
-    If (M1, M2) is a new shape such that M1*M2 == N1*N2*N3 then invert
+#     If (M1, M2) is a new shape such that M1*M2 == N1*N2*N3 then invert
     
-    N2*N3*i + N3*j + k == M2*i + j --> (M1, M2).
+#     N2*N3*i + N3*j + k == M2*i + j --> (M1, M2).
 
     
-    Parameters
-    ----------
-    n     : The value of the flattened tensor index.
-    plist : I think this is the a list of products of the
-            new tensor shape tuple.
-    Returns
-    -------
-    tensor_tuple : The new tuple of tensor indices according to the
-                   new input shape.
-    """
-    ijk = list()
-    a, xx = divmod(n, plist[0])
-    ijk.append(a)
-    for x in plist[1:]:
-        a, xx = divmod(xx, x)
-        ijk.append(a)
-    return tuple(ijk)
+#     Parameters
+#     ----------
+#     n     : The value of the flattened tensor index.
+#     plist : I think this is the a list of products of the
+#             new tensor shape tuple.
+#     Returns
+#     -------
+#     tensor_tuple : The new tuple of tensor indices according to the
+#                    new input shape.
+#     """
+#     ijk = list()
+#     a, xx = divmod(n, plist[0])
+#     ijk.append(a)
+#     for x in plist[1:]:
+#         a, xx = divmod(xx, x)
+#         ijk.append(a)
+#     return tuple(ijk)
 
 
-def list_prod(list1, list2):
-    a = len(list1)
-    assert a == len(list2)
-    want = [0]*a
-    for i in range(a):
-        want[i] = list1[i]*list2[i]
-    return want
+# def list_prod(list1, list2):
+#     a = len(list1)
+#     assert a == len(list2)
+#     want = [0]*a
+#     for i in range(a):
+#         want[i] = list1[i]*list2[i]
+#     return want
 
 
 
@@ -92,22 +92,8 @@ class tensor:
             self.shape = array.shape
         elif (type(array) == tuple):
             self.idx = array[0]
-            self.vals = array[1].copy()
+            self.vals = array[1]
             self.shape = array[2]
-#             for x in np.argwhere(array):
-#                 if (abs(array[tuple(x)]) > tol):
-#                     self.update({tuple(x):array[tuple(x)]})
-#         elif (type(array) == sps.dok.dok_matrix):
-#             for k, v in array.items():
-#                 if (abs(v) > tol):
-#                     self.update({k:v})
-#             self.shape = array.shape
-#         elif (type(array) == sps.csr.csr_matrix):
-#             temp = array.todok()
-#             for k, v in temp.items():
-#                 if (abs(v) > tol):
-#                     self.update({k:v})
-#             self.shape = array.shape
         elif (array == None):
             self.shape = tuple()
             self.idx = np.array()
@@ -179,9 +165,8 @@ class tensor:
         """
         assert len(new_order) == len(self.shape)
 
-        idx = np.argsort(new_order)
-        new_shape = tuple([self.shape[i] for i in idx])
-        return tensor((self.idx[:, idx], self.vals, new_shape))
+        new_shape = tuple([self.shape[i] for i in new_order])
+        return tensor((self.idx[:, new_order], self.vals, new_shape))
         
     
     def dot(self, tensor2, contracted_indices):
@@ -244,9 +229,8 @@ class tensor:
         # dot and reshape into final tensor
         tleft = tleft.dot(tright)
         del tright
-        tleft = tleft.todok(copy=False)
-        new_idx = np.array(tleft.keys())
-        new_vals = np.array(tleft.values())
+        new_idx = np.transpose(np.vstack(tleft.nonzero()))
+        new_vals = tleft.data
         return tensor((new_idx, new_vals, tleft.shape)).reshape(final)
     
     def to_csr(self,):
@@ -264,69 +248,69 @@ class tensor:
     
         
     
-def tensordot(tensor1, tensor2, contracted_indices):
-    """
-    Contracts two sparse tensors together accoding to `contracted_indices'.
+# def tensordot(tensor1, tensor2, contracted_indices):
+#     """
+#     Contracts two sparse tensors together accoding to `contracted_indices'.
 
-    Parameters
-    ----------
-    tensor1            : The first tensor to contract.
-    tensor2            : The second tensor that's contracted.
-    contracted_indices : The indices over which the two tensors will be
-                         contracted.
+#     Parameters
+#     ----------
+#     tensor1            : The first tensor to contract.
+#     tensor2            : The second tensor that's contracted.
+#     contracted_indices : The indices over which the two tensors will be
+#                          contracted.
 
-    Returns
-    -------
-    new_array : A new tensor built by contracting tensor2 and this tensor
-                over their common indices.
+#     Returns
+#     -------
+#     new_array : A new tensor built by contracting tensor2 and this tensor
+#                 over their common indices.
                     
-    """
-    assert (len(contracted_indices) == 2)
+#     """
+#     assert (len(contracted_indices) == 2)
     
-    # get the tensor shapes
-    ts1 = tensor1.shape
-    ts2 = tensor2.shape
+#     # get the tensor shapes
+#     ts1 = tensor1.shape
+#     ts2 = tensor2.shape
     
-    # get the contracted indices
-    ax1 = contracted_indices[0] # this is a tuple of indices for tensor1
-    ax2 = contracted_indices[1] # ditto for tensor2
+#     # get the contracted indices
+#     ax1 = contracted_indices[0] # this is a tuple of indices for tensor1
+#     ax2 = contracted_indices[1] # ditto for tensor2
     
-    # build the transposed tuples
-    idx1 = range(len(ts1))
-    idx2 = range(len(ts2))
-    for n in ax1:
-        idx1.remove(n)
-    for n in ax2:
-        idx2.remove(n)
-    id1f = tuple(list(idx1) + list(ax1))
-    id2f = tuple(list(ax2) + list(idx2))
+#     # build the transposed tuples
+#     idx1 = range(len(ts1))
+#     idx2 = range(len(ts2))
+#     for n in ax1:
+#         idx1.remove(n)
+#     for n in ax2:
+#         idx2.remove(n)
+#     id1f = tuple(list(idx1) + list(ax1))
+#     id2f = tuple(list(ax2) + list(idx2))
     
-    # transpose the input tensors to prepare
-    # for matrix multiplication
-    tleft = tensor1.transpose(id1f)
-    tright = tensor2.transpose(id2f)
+#     # transpose the input tensors to prepare
+#     # for matrix multiplication
+#     tleft = tensor1.transpose(id1f)
+#     tright = tensor2.transpose(id2f)
     
-    # now sperate and reshape into two-index objects
-    ts1 = tleft.shape
-    ts2 = tright.shape
-    left = ts1[:len(idx1)]
-    right = ts2[len(ax2):]
-    final = tuple(list(left) + list(right))
-    assert (len(ax2) == (len(ts1)-len(idx1)))
-    tleft = tleft.reshape((prod(ts1[:len(idx1)]), prod(ts1[len(idx1):])))
-    tright = tright.reshape((prod(ts2[:len(ax2)]), prod(ts2[len(ax2):])))
+#     # now sperate and reshape into two-index objects
+#     ts1 = tleft.shape
+#     ts2 = tright.shape
+#     left = ts1[:len(idx1)]
+#     right = ts2[len(ax2):]
+#     final = tuple(list(left) + list(right))
+#     assert (len(ax2) == (len(ts1)-len(idx1)))
+#     tleft = tleft.reshape((prod(ts1[:len(idx1)]), prod(ts1[len(idx1):])))
+#     tright = tright.reshape((prod(ts2[:len(ax2)]), prod(ts2[len(ax2):])))
     
-    # make sparse matricies in CSR format
-    tlidx = np.asarray(tleft.keys())
-    tleft = sps.csr_matrix((tleft.values(), (tlidx[:,0], tlidx[:,1])), shape=tleft.shape)
-    tridx = np.asarray(tright.keys())
-    tright = sps.csr_matrix((tright.values(), (tridx[:,0], tridx[:,1])), shape=tright.shape)
+#     # make sparse matricies in CSR format
+#     tlidx = np.asarray(tleft.keys())
+#     tleft = sps.csr_matrix((tleft.values(), (tlidx[:,0], tlidx[:,1])), shape=tleft.shape)
+#     tridx = np.asarray(tright.keys())
+#     tright = sps.csr_matrix((tright.values(), (tridx[:,0], tridx[:,1])), shape=tright.shape)
     
-    # dot and reshape into final tensor
-    tleft = tleft.dot(tright)
-    del tright
-    tleft = tleft.todok(copy=False)
-    tleft = tensor(tleft).reshape(final)
-    return tleft
+#     # dot and reshape into final tensor
+#     tleft = tleft.dot(tright)
+#     del tright
+#     tleft = tleft.todok(copy=False)
+#     tleft = tensor(tleft).reshape(final)
+#     return tleft
     
     
