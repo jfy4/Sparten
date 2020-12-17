@@ -111,11 +111,11 @@ class tensor:
 
     def norm(self):
         """
-        Computes the norm of the tensor ASSUMING IT IS REAL!!!
+        Computes the norm of the tensor.
         """
-        want = np.sum(self.vals * np.conjugate(self.vals))
-        return want
-        # return np.linalg.norm(self.vals)
+        # want = np.sum(self.vals * np.conjugate(self.vals))
+        # return want
+        return np.linalg.norm(self.vals)
 
 
     def conjugate(self,):
