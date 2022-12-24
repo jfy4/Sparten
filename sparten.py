@@ -1,11 +1,11 @@
-#!/anaconda/bin/python
+#!/miniconda3/bin/python
 
 import scipy.sparse as sps
 import scipy.sparse.linalg as spsla
 import numpy as np
 from operator import mul
 import copy
-
+from functools import reduce
 
 def prod(iterable):
     """
@@ -69,13 +69,10 @@ def prod(iterable):
 
 class tensor:
     """
-    A sparse tensor class build on the back of python dictionary.
-    The idea is to simply store the nonzero elements as key, value
-    pairs and perform operations on those.
-    
+    A sparse tensor class.
     """
     
-    def __init__(self, array=None, tol=1e-12):
+    def __init__(self, array=None, tol=1e-14):
         """
         Initialize the sparse tensor.
         
@@ -85,6 +82,8 @@ class tensor:
         tol   : The tolerance below which values are ignored
                 and set to zero when creating the tensor.
         """
+        # Check what the input is and make the
+        # set-up accordingly
         if (type(array) == np.ndarray):
             truth = np.abs(array) > tol
             self.idx = np.argwhere(truth)
@@ -105,7 +104,7 @@ class tensor:
         """
         Multiplication.  Right now only for scalars.
         """
-        if isinstance(other, (int, long, float, complex)):
+        if isinstance(other, (int, float, complex)):
             return tensor((self.idx, self.vals*other, self.shape))
         else:
             raise ValueError("Don't know how to multiply by that.")
@@ -197,8 +196,8 @@ class tensor:
         ax2 = contracted_indices[1] # ditto for tensor2
 
         # build the transposed tuples
-        idx1 = range(len(ts1))
-        idx2 = range(len(ts2))
+        idx1 = list(range(len(ts1)))
+        idx2 = list(range(len(ts2)))
         for n in ax1:
             idx1.remove(n)
         for n in ax2:

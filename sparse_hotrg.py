@@ -44,7 +44,16 @@ def getU2d(tensor, nums, compute_sparse=False, return_sparse=True):
         return st.tensor((evecs[:,idx])[:, :nums])
     else:
         return (evecs[:,idx])[:, :nums]
-    
+
+def exact_contract(tensor1, tensor2):
+    ts1 = tensor1.shape
+    ts2 = tensor2.shape
+    final = tensor1.dot(tensor2, ([3], [2]))
+    final = final.transpose((0,3, 1,4, 2, 5))
+    final = final.reshape((ts1[0]*ts2[0], ts1[1]*ts2[1], ts1[2], ts2[3]))
+    return final
+
+
 def update2d(tensor, umat):
 #     ts = tensor.shape
     us = umat.shape
