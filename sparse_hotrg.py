@@ -79,6 +79,12 @@ def traceupdate2d(tensor):
     traced = traced.transpose((0,2,1,3))
     return traced.reshape((ts[0]**2, ts[1]**2))
 
+def traceupdate3d(tensor):
+    ts = tensor.shape
+    traced = tensor.dot(tensor, ([4,5], [5,4]))
+    traced = traced.transpose((0,4, 1,5, 2,6, 3,7))
+    return traced.reshape((ts[0]**2, ts[1]**2, ts[2]**2, ts[3]**2))
+
 def update3d(tensor, umat):
     # tensor is assumed left right front back top bottom
     us = umat.shape
