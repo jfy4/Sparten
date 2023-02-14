@@ -109,6 +109,16 @@ class tensor:
         else:
             raise ValueError("Don't know how to multiply by that.")
 
+    def __truediv__(self, other):
+        """
+        Division.  Right now only for scalars.
+        """
+        if isinstance(other, (int, float, complex)):
+            return tensor((self.idx, self.vals/other, self.shape))
+        else:
+            raise ValueError("Don't know how to divide by that.")
+
+        
     def norm(self):
         """
         Computes the norm of the tensor ASSUMING IT IS REAL!!!
