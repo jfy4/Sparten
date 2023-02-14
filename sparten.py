@@ -115,6 +115,16 @@ class tensor:
         """
         return np.linalg.norm(self.vals)
 
+    def trace(self, contracted_indices):
+        """
+        Computes the trace over two indices.
+        """
+        assert len(contracted_indices) == 2
+        cidx = list(contracted_indices)
+        assert self.shape[cidx[0]] == self.shape[cidx[1]]
+        one = tensor(np.identity(self.shape[cidx[0]]))
+        want = self.dot(one, (cidx, [0,1]))
+        return want
 
 
     def reshape(self, size_tuple):
