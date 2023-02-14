@@ -118,6 +118,18 @@ class tensor:
         else:
             raise ValueError("Don't know how to divide by that.")
 
+
+    # def __add__(self, other):
+    #     """
+    #     Addition.  Right now only for scalars.
+    #     """
+    #     if isinstance(other, (int, float, complex)):
+    #         return tensor((self.idx, self.vals+other, self.shape))
+    #     elif isinstance(other, (sparten.tensor,)):
+    #         # wip
+    #     else:
+    #         raise ValueError("Don't know how to divide by that.")
+
         
     def norm(self):
         """
